@@ -23,6 +23,13 @@
             --card-bg: #ffffff;
             --border: #e9ecef;
             --transition: all 0.3s ease;
+            --neon-pink: #ff00ff;
+            --neon-blue: #00ffff;
+            --neon-purple: #bf00ff;
+        }
+        
+        html {
+            scroll-behavior: smooth;
         }
         
         body {
@@ -35,29 +42,7 @@
             padding-bottom: 40px; /* Space for marquee */
         }
         
-        /* Custom Cursor */
-        .cursor {
-            position: fixed;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: rgba(44, 44, 44, 0.2);
-            pointer-events: none;
-            z-index: 9999;
-            mix-blend-mode: difference;
-            transition: transform 0.1s ease;
-        }
         
-        .cursor-follower {
-            position: fixed;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: 1px solid rgba(44, 44, 44, 0.1);
-            pointer-events: none;
-            z-index: 9998;
-            transition: transform 0.15s ease;
-        }
         
         /* WebGL Canvas */
         #webgl-canvas {
@@ -70,7 +55,7 @@
             opacity: 0.7;
         }
         
-        /* Loading Screen */
+        /* Loading Screen - Enhanced with Progress Bar */
         #loading-screen {
             position: fixed;
             top: 0;
@@ -123,6 +108,26 @@
             font-size: 1.2rem;
             color: var(--text-secondary);
             letter-spacing: 1px;
+            margin-bottom: 2rem;
+        }
+        
+        /* Progress Bar */
+        .progress-container {
+            width: 300px;
+            height: 6px;
+            background: var(--border);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--neon-pink), var(--neon-blue));
+            border-radius: 3px;
+            transition: width 0.5s ease;
+            box-shadow: 0 0 10px rgb(252, 188, 40);
         }
         
         /* Background Animation */
@@ -214,6 +219,12 @@
             background: rgba(255, 255, 255, 0.9);
             backdrop-filter: blur(10px);
             border-bottom: 1px solid var(--border);
+            transition: var(--transition);
+        }
+        
+        .header:hover {
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
         }
         
         .logo {
@@ -222,6 +233,12 @@
             font-weight: 700;
             color: var(--accent);
             letter-spacing: 1px;
+            transition: var(--transition);
+        }
+        
+        .logo:hover {
+            transform: scale(1.05);
+            text-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
         
         .mini-timer {
@@ -235,6 +252,11 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            transition: var(--transition);
+        }
+        
+        .timer-item:hover {
+            transform: translateY(-3px);
         }
         
         .timer-number {
@@ -285,6 +307,11 @@
             display: inline-block;
             color: var(--text-primary);
             font-weight: 600;
+            transition: var(--transition);
+        }
+        
+        .section-title:hover {
+            transform: translateX(5px);
         }
         
         .section-title::after {
@@ -295,6 +322,11 @@
             width: 80px;
             height: 2px;
             background: var(--accent);
+            transition: width 0.3s ease;
+        }
+        
+        .section-title:hover::after {
+            width: 100px;
         }
         
         /* Invitation Card */
@@ -307,6 +339,23 @@
             border: 1px solid var(--border);
             transition: var(--transition);
             text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .invitation-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: left 0.7s ease;
+        }
+        
+        .invitation-card:hover::before {
+            left: 100%;
         }
         
         .invitation-card:hover {
@@ -349,6 +398,7 @@
         
         .name:hover {
             transform: translateY(-3px);
+            text-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
         }
         
         .and {
@@ -368,6 +418,12 @@
             margin: 1.5rem 0;
             color: var(--text-primary);
             font-family: 'Cormorant Garamond', serif;
+            transition: var(--transition);
+        }
+        
+        .date:hover, .time:hover, .venue:hover {
+            transform: scale(1.02);
+            color: var(--accent);
         }
         
         .map-container {
@@ -387,6 +443,23 @@
             transition: var(--transition);
             font-family: 'Inter', sans-serif;
             font-weight: 500;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .map-switch::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+            transition: left 0.7s ease;
+        }
+        
+        .map-switch:hover::before {
+            left: 100%;
         }
         
         .map-switch:hover {
@@ -405,6 +478,12 @@
             height: 1px;
             background: var(--border);
             margin: 3rem auto;
+            transition: var(--transition);
+        }
+        
+        .invitation-card:hover .divider {
+            width: 150px;
+            background: var(--accent);
         }
         
         /* Welcome Section - Enhanced */
@@ -416,6 +495,7 @@
             margin-bottom: 4rem;
             position: relative;
             overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
         }
         
         .welcome-text {
@@ -508,6 +588,30 @@
             background: rgba(255, 215, 0, 0.7);
             border-radius: 50%;
             animation: sparkleTwinkle 2s infinite;
+        }
+        
+        /* Enhanced Welcome Background Animation */
+        .welcome-glow {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,0,255,0.1) 0%, rgba(0,255,255,0.05) 50%, transparent 70%);
+            filter: blur(40px);
+            animation: welcomeGlow 8s infinite alternate;
+            z-index: 0;
+        }
+        
+        .welcome-glow:nth-child(1) {
+            top: -100px;
+            left: -100px;
+            animation-delay: 0s;
+        }
+        
+        .welcome-glow:nth-child(2) {
+            bottom: -100px;
+            right: -100px;
+            animation-delay: -4s;
         }
         
         /* Photo Gallery */
@@ -646,7 +750,7 @@
         
         .marquee {
             white-space: nowrap;
-            animation: marqueeScroll 05s linear infinite;
+            animation: marqueeScroll 20s linear infinite;
             font-family: 'Cormorant Garamond', serif;
             font-size: 0.6rem;
             font-weight: 600;
@@ -713,6 +817,12 @@
             100% { transform: translateX(-100%); }
         }
         
+        @keyframes welcomeGlow {
+            0% { transform: scale(1) rotate(0deg); opacity: 0.7; }
+            50% { transform: scale(1.2) rotate(180deg); opacity: 0.4; }
+            100% { transform: scale(1) rotate(360deg); opacity: 0.7; }
+        }
+        
         /* Responsive */
         @media (max-width: 768px) {
             .container {
@@ -768,7 +878,7 @@
                 cursor: auto;
             }
             
-            .cursor, .cursor-follower {
+            .cursor, .cursor-follower, .cursor-trail {
                 display: none;
             }
         }
@@ -791,6 +901,9 @@
             <div class="heart">❤</div>
         </div>
         <div class="loading-subtext">Our Special Day</div>
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
     </div>
     
     <!-- Background Animation -->
@@ -840,6 +953,8 @@
                 <div class="floating-heart">❤</div>
             </div>
             <div class="welcome-sparkles" id="welcomeSparkles"></div>
+            <div class="welcome-glow"></div>
+            <div class="welcome-glow"></div>
             <div class="welcome-text">
                 With immense joy and gratitude,
                 we invite you to join us in celebrating the Engagement Ceremony
@@ -1100,6 +1215,51 @@
             }
         }
 
+        // Neon cursor trail effect
+        function createCursorTrail() {
+            const trails = [];
+            const trailCount = 10;
+            
+            for (let i = 0; i < trailCount; i++) {
+                const trail = document.createElement('div');
+                trail.classList.add('cursor-trail');
+                document.body.appendChild(trail);
+                trails.push({
+                    element: trail,
+                    x: 0,
+                    y: 0,
+                    opacity: 0
+                });
+            }
+            
+            let currentTrail = 0;
+            
+            document.addEventListener('mousemove', (e) => {
+                const trail = trails[currentTrail];
+                trail.x = e.clientX;
+                trail.y = e.clientY;
+                trail.opacity = 1;
+                
+                trail.element.style.left = `${trail.x}px`;
+                trail.element.style.top = `${trail.y}px`;
+                trail.element.style.opacity = trail.opacity;
+                
+                // Random neon color for each trail
+                const colors = ['var(--neon-pink)', 'var(--neon-blue)', 'var(--neon-purple)'];
+                const randomColor = colors[Math.floor(Math.random() * colors.length)];
+                trail.element.style.background = randomColor;
+                trail.element.style.boxShadow = `0 0 10px ${randomColor}, 0 0 20px ${randomColor}`;
+                
+                currentTrail = (currentTrail + 1) % trailCount;
+                
+                // Fade out trails
+                setTimeout(() => {
+                    trail.opacity = 0;
+                    trail.element.style.opacity = trail.opacity;
+                }, 300);
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize WebGL Fluid Simulation
             const canvas = document.getElementById('webgl-canvas');
@@ -1111,6 +1271,9 @@
             
             // Create welcome sparkles
             createWelcomeSparkles();
+            
+            // Create cursor trail effect
+            createCursorTrail();
 
             // Custom cursor
             const cursor = document.querySelector('.cursor');
@@ -1129,14 +1292,26 @@
                 fluidSimulation.updatePointer(e.clientX, e.clientY);
             });
 
-            // Hide loading screen after 3 seconds
-            setTimeout(() => {
-                document.getElementById('loading-screen').style.opacity = '0';
-                setTimeout(() => {
-                    document.getElementById('loading-screen').style.display = 'none';
-                }, 1000);
-            }, 3000);
-            
+            // Loading progress bar
+            const progressBar = document.getElementById('progressBar');
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += Math.random() * 10;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(progressInterval);
+                    
+                    // Hide loading screen after progress completes
+                    setTimeout(() => {
+                        document.getElementById('loading-screen').style.opacity = '0';
+                        setTimeout(() => {
+                            document.getElementById('loading-screen').style.display = 'none';
+                        }, 1000);
+                    }, 500);
+                }
+                progressBar.style.width = `${progress}%`;
+            }, 200);
+
             // Initialize timer
             updateMiniTimer();
             setInterval(updateMiniTimer, 1000);
