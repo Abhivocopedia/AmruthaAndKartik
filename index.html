@@ -1057,7 +1057,7 @@
     </div>
 
     <script>
-        // WebGL Fluid Simulation
+       // WebGL Fluid Simulation
 class FluidSimulation {
     constructor(canvas) {
         this.canvas = canvas;
@@ -1299,12 +1299,12 @@ function loadGalleryImages() {
     // Clear any existing content and create container for immediate display
     gallery.innerHTML = '<div class="loading-gallery" style="grid-column: 1 / -1; text-align: center; padding: 1rem; color: var(--text-secondary);"><i class="fas fa-spinner fa-spin"></i> Loading photos... <span id="loadedCount">0</span>/<span id="totalCount">0</span></div><div class="gallery-images-container" style="display: contents;"></div>';
     
-    console.log('Starting photo loading for GitHub Pages...');
+    console.log('Starting photo loading from master branch...');
     
-    // MANUAL LIST - REPLACE THIS WITH YOUR ACTUAL 200 FILE NAMES
+    // Generate file list for master branch
     const imageFiles = generateFileList(5669, 5868); // 200 files from 5669 to 5868
     
-    console.log(`Loading ${imageFiles.length} photos`);
+    console.log(`Loading ${imageFiles.length} photos from master branch`);
     loadImagesWithProgress(gallery, imageFiles);
 }
 
@@ -1329,7 +1329,7 @@ function loadImagesWithProgress(gallery, imageFiles) {
     
     totalCountEl.textContent = totalImages;
     
-    console.log(`Loading ${totalImages} images...`);
+    console.log(`Loading ${totalImages} images from master branch...`);
     
     // Load each image and display immediately
     imageFiles.forEach((filename, index) => {
@@ -1351,7 +1351,7 @@ function loadImagesWithProgress(gallery, imageFiles) {
                 setTimeout(() => {
                     const loadingEl = document.querySelector('.loading-gallery');
                     if (loadingEl) {
-                        loadingEl.innerHTML = `<i class="fas fa-check"></i> Complete! Loaded ${successfullyLoaded} photos`;
+                        loadingEl.innerHTML = `<i class="fas fa-check"></i> Complete! Loaded ${successfullyLoaded} photos from master branch`;
                         setTimeout(() => {
                             loadingEl.remove();
                         }, 3000);
@@ -1364,7 +1364,7 @@ function loadImagesWithProgress(gallery, imageFiles) {
             loadedCount++;
             loadedCountEl.textContent = loadedCount;
             updateLoadingMessage(loadedCount, totalImages, successfullyLoaded);
-            console.warn(`Failed to load: ${filename}`);
+            console.warn(`Failed to load from master branch: ${filename}`);
             
             // Remove loading message when all images are processed
             if (loadedCount === totalImages) {
@@ -1374,7 +1374,7 @@ function loadImagesWithProgress(gallery, imageFiles) {
                         if (successfullyLoaded === 0) {
                             showNoImagesPlaceholder(gallery);
                         } else {
-                            loadingEl.innerHTML = `<i class="fas fa-check"></i> Complete! Loaded ${successfullyLoaded} out of ${totalImages} photos`;
+                            loadingEl.innerHTML = `<i class="fas fa-check"></i> Complete! Loaded ${successfullyLoaded} out of ${totalImages} photos from master branch`;
                             setTimeout(() => {
                                 loadingEl.remove();
                             }, 3000);
@@ -1384,6 +1384,7 @@ function loadImagesWithProgress(gallery, imageFiles) {
             }
         };
         
+        // Load image from master branch
         img.src = filename;
     });
     
@@ -1426,7 +1427,7 @@ function getAllLoadedImages() {
 function updateLoadingMessage(loaded, total, successful) {
     const loadingEl = document.querySelector('.loading-gallery');
     if (loadingEl) {
-        loadingEl.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Loading photos... ${loaded}/${total}`;
+        loadingEl.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Loading photos from master branch... ${loaded}/${total}`;
     }
 }
 
@@ -1436,11 +1437,11 @@ function showNoImagesPlaceholder(gallery) {
         <div class="no-images-placeholder" style="grid-column: 1 / -1; text-align: center; padding: 4rem;">
             <i class="fas fa-images" style="font-size: 4rem; color: var(--text-secondary); margin-bottom: 1.5rem;"></i>
             <h3 style="color: var(--text-secondary); font-family: 'Cormorant Garamond', serif; margin-bottom: 1rem;">
-                No Photos Found
+                No Photos Found in Master Branch
             </h3>
             <p style="color: var(--text-secondary); max-width: 500px; margin: 0 auto;">
-                No photos were loaded successfully.<br>
-                Please check that your image files are properly uploaded to GitHub.
+                No photos were loaded from the master branch.<br>
+                Please check that your image files are properly uploaded to the master branch.
             </p>
         </div>
     `;
@@ -1461,17 +1462,17 @@ function updateDownloadButton() {
                 return;
             }
             
-            if (confirm(`Download all ${loadedImages.length} photos?`)) {
+            if (confirm(`Download all ${loadedImages.length} photos from master branch?`)) {
                 loadedImages.forEach((imageUrl, index) => {
                     setTimeout(() => {
                         downloadImage(imageUrl, `engagement-memory-${index + 1}.jpg`);
                     }, index * 300);
                 });
-                alert(`Download started! ${loadedImages.length} photos downloading.`);
+                alert(`Download started! ${loadedImages.length} photos downloading from master branch.`);
             }
         });
         
-        newBtn.innerHTML = `<i class="fas fa-download"></i> Download Photos`;
+        newBtn.innerHTML = `<i class="fas fa-download"></i> Download Photos (Master Branch)`;
     }
 }
 
@@ -1494,7 +1495,7 @@ function openImageModal(index) {
     galleryImages = getAllLoadedImages();
     
     if (galleryImages.length === 0) {
-        alert('No photos available to view.');
+        alert('No photos available to view from master branch.');
         return;
     }
     
