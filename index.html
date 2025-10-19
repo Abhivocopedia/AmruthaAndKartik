@@ -1016,8 +1016,15 @@
                     Download Photos
                 </button>
                 <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.5rem;">
-                    All photos will be automatically loaded
+                    Photos will appear as they load
                 </p>
+            </div>
+            
+            <!-- Loading status -->
+            <div id="loadingStatus" style="text-align: center; margin-bottom: 1rem; color: var(--text-secondary);">
+                <i class="fas fa-spinner fa-spin"></i> 
+                <span id="loadedCount">0</span> photos loaded out of 
+                <span id="totalCount">0</span> checked
             </div>
             
             <div class="gallery" id="gallery">
@@ -1237,13 +1244,13 @@
         function loadGalleryImages() {
             const gallery = document.getElementById('gallery');
             
-            // Clear any existing content and create container for immediate display
-            gallery.innerHTML = '<div class="loading-gallery" style="grid-column: 1 / -1; text-align: center; padding: 1rem; color: var(--text-secondary);"><i class="fas fa-spinner fa-spin"></i> Loading photos... <span id="loadedCount">0</span>/<span id="totalCount">0</span></div><div class="gallery-images-container" style="display: contents;"></div>';
+            // Clear any existing content
+            gallery.innerHTML = '';
             
             console.log('Starting photo loading for GitHub Pages...');
             
             // PRE-GENERATED LIST FOR GITHUB PAGES - ALL POSSIBLE FILES FROM 5669-7000
-            const imageFiles = generateImageList(5569, 7000);
+            const imageFiles = generateImageList(5500, 6500);
             
             console.log(`Attempting to load ${imageFiles.length} potential photos`);
             loadImagesWithProgress(gallery, imageFiles);
@@ -1266,7 +1273,6 @@
 
         // Load images with progress tracking and immediate display
         function loadImagesWithProgress(gallery, imageFiles) {
-            const imagesContainer = gallery.querySelector('.gallery-images-container');
             const loadedCountEl = document.getElementById('loadedCount');
             const totalCountEl = document.getElementById('totalCount');
             
@@ -1285,10 +1291,10 @@
                 img.onload = function() {
                     loadedCount++;
                     successfullyLoaded++;
-                    loadedCountEl.textContent = loadedCount;
+                    loadedCountEl.textContent = successfullyLoaded;
                     
                     // Display the successfully loaded image immediately
-                    displaySingleImage(imagesContainer, filename, successfullyLoaded - 1, imageFiles);
+                    displaySingleImage(gallery, filename, successfullyLoaded - 1, imageFiles);
                     
                     // Update loading message
                     updateLoadingMessage(loadedCount, totalImages, successfullyLoaded);
@@ -1296,11 +1302,11 @@
                     // Remove loading message when all images are processed
                     if (loadedCount === totalImages) {
                         setTimeout(() => {
-                            const loadingEl = document.querySelector('.loading-gallery');
-                            if (loadingEl) {
-                                loadingEl.innerHTML = `<i class="fas fa-check"></i> Complete! ${successfullyLoaded} photos loaded out of ${totalImages} checked`;
+                            const loadingStatus = document.getElementById('loadingStatus');
+                            if (loadingStatus) {
+                                loadingStatus.innerHTML = `<i class="fas fa-check"></i> Complete! ${successfullyLoaded} photos loaded out of ${totalImages} checked`;
                                 setTimeout(() => {
-                                    loadingEl.remove();
+                                    loadingStatus.style.display = 'none';
                                 }, 3000);
                             }
                         }, 1000);
@@ -1309,17 +1315,17 @@
                 
                 img.onerror = function() {
                     loadedCount++;
-                    loadedCountEl.textContent = loadedCount;
+                    loadedCountEl.textContent = successfullyLoaded;
                     updateLoadingMessage(loadedCount, totalImages, successfullyLoaded);
                     
                     // Remove loading message when all images are processed
                     if (loadedCount === totalImages) {
                         setTimeout(() => {
-                            const loadingEl = document.querySelector('.loading-gallery');
-                            if (loadingEl) {
-                                loadingEl.innerHTML = `<i class="fas fa-check"></i> Complete! ${successfullyLoaded} photos loaded out of ${totalImages} checked`;
+                            const loadingStatus = document.getElementById('loadingStatus');
+                            if (loadingStatus) {
+                                loadingStatus.innerHTML = `<i class="fas fa-check"></i> Complete! ${successfullyLoaded} photos loaded out of ${totalImages} checked`;
                                 setTimeout(() => {
-                                    loadingEl.remove();
+                                    loadingStatus.style.display = 'none';
                                 }, 3000);
                             }
                         }, 1000);
@@ -1335,9 +1341,9 @@
 
         // Update loading message
         function updateLoadingMessage(loaded, total, successful) {
-            const loadingEl = document.querySelector('.loading-gallery');
-            if (loadingEl) {
-                loadingEl.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Loading photos... ${loaded}/${total} (${successful} found)`;
+            const loadingStatus = document.getElementById('loadingStatus');
+            if (loadingStatus) {
+                loadingStatus.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${successful} photos loaded out of ${loaded}/${total} checked`;
             }
         }
 
