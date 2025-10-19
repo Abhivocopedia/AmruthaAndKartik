@@ -1057,14 +1057,693 @@
     </div>
 
     <script>
-       // Replace the generateFileList function with your actual file names
-function generateFileList(start, end) {
-    return [
-        'your-actual-file-1.jpg',
-        'your-actual-file-2.jpg',
-        // ... all 200 actual file names
-    ];
+       /// WebGL Fluid Simulation
+class FluidSimulation {
+    constructor(canvas) {
+        this.canvas = canvas;
+        this.gl = canvas.getContext('webgl');
+        this.pointer = { x: 0.5, y: 0.5 };
+        this.init();
+    }
+
+    init() {
+        const gl = this.gl;
+        
+        // Vertex shader
+        const vertexShaderSource = `
+            attribute vec2 a_position;
+            void main() {
+                gl_Position = vec4(a_position, 0.0, 1.0);
+            }
+        `;
+
+        // Fragment shader for fluid simulation
+        const fragmentShaderSource = `
+            precision highp float;
+            uniform vec2 resolution;
+            uniform vec2 pointer;
+            uniform float time;
+            
+            void main() {
+                vec2 uv = gl_FragCoord.xy / resolution.xy;
+                vec2 pointerUV = pointer / resolution.xy;
+                
+                // Create fluid-like effect
+                float dist = distance(uv, pointerUV);
+                float intensity = 0.1 / (dist * 20.0);
+                
+                // Add time-based animation
+                float wave = sin(time * 2.0 + dist * 20.0) * 0.1;
+                intensity += wave;
+                
+                // Soft color gradient
+                vec3 color = mix(
+                    vec3(0.9, 0.95, 1.0),
+                    vec3(0.8, 0.85, 0.9),
+                    intensity * 2.0
+                );
+                
+                gl_FragColor = vec4(color, intensity * 0.3);
+            }
+        `;
+
+        // Compile shaders
+        const vertexShader = this.compileShader(gl.VERTEX_SHADER, vertexShaderSource);
+        const fragmentShader = this.compileShader(gl.FRAGMENT_SHADER, fragmentShaderSource);
+        
+        // Create program
+        this.program = gl.createProgram();
+        gl.attachShader(this.program, vertexShader);
+        gl.attachShader(this.program, fragmentShader);
+        gl.linkProgram(this.program);
+        
+        if (!gl.getProgramParameter(this.program, gl.LINK_STATUS)) {
+            console.error('Unable to initialize the shader program.');
+        }
+
+        // Create buffers
+        const positionBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        
+        const positions = [
+            -1.0, -1.0,
+            1.0, -1.0,
+            -1.0, 1.0,
+            1.0, 1.0,
+        ];
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+        
+        // Set up attributes
+        const positionAttributeLocation = gl.getAttribLocation(this.program, "a_position");
+        gl.enableVertexAttribArray(positionAttributeLocation);
+        gl.vertexAttribPointer(positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
+        
+        // Get uniform locations
+        this.resolutionLocation = gl.getUniformLocation(this.program, "resolution");
+        this.pointerLocation = gl.getUniformLocation(this.program, "pointer");
+        this.timeLocation = gl.getUniformLocation(this.program, "time");
+        
+        this.startTime = Date.now();
+    }
+
+    compileShader(type, source) {
+        const gl = this.gl;
+        const shader = gl.createShader(type);
+        gl.shaderSource(shader, source);
+        gl.compileShader(shader);
+        
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+            console.error('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(shader));
+            gl.deleteShader(shader);
+            return null;
+        }
+        
+        return shader;
+    }
+
+    resize() {
+        const canvas = this.canvas;
+        const displayWidth = canvas.clientWidth;
+        const displayHeight = canvas.clientHeight;
+        
+        if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
+            canvas.width = displayWidth;
+            canvas.height = displayHeight;
+        }
+    }
+
+    render() {
+        const gl = this.gl;
+        this.resize();
+        
+        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        
+        gl.useProgram(this.program);
+        
+        // Set uniforms
+        gl.uniform2f(this.resolutionLocation, gl.canvas.width, gl.canvas.height);
+        gl.uniform2f(this.pointerLocation, this.pointer.x * gl.canvas.width, (1 - this.pointer.y) * gl.canvas.height);
+        gl.uniform1f(this.timeLocation, (Date.now() - this.startTime) * 0.001);
+        
+        // Draw
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        
+        requestAnimationFrame(() => this.render());
+    }
+
+    updatePointer(x, y) {
+        this.pointer.x = x / window.innerWidth;
+        this.pointer.y = y / window.innerHeight;
+    }
 }
+
+// Function to create background particles
+function createBackgroundParticles() {
+    const container = document.getElementById('bgParticles');
+    const particleCount = 30;
+    
+    for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.classList.add('particle');
+        
+        // Random size between 2px and 8px
+        const size = Math.random() * 6 + 2;
+        particle.style.width = `${size}px`;
+        particle.style.height = `${size}px`;
+        
+        // Random position
+        particle.style.left = `${Math.random() * 100}%`;
+        
+        // Random animation duration between 10s and 25s
+        const duration = Math.random() * 15 + 10;
+        particle.style.animationDuration = `${duration}s`;
+        
+        // Random animation delay
+        particle.style.animationDelay = `${Math.random() * 5}s`;
+        
+        container.appendChild(particle);
+    }
+}
+
+// Function to create sparkles in welcome section
+function createWelcomeSparkles() {
+    const container = document.getElementById('welcomeSparkles');
+    const sparkleCount = 15;
+    
+    for (let i = 0; i < sparkleCount; i++) {
+        const sparkle = document.createElement('div');
+        sparkle.classList.add('sparkle');
+        
+        // Random position
+        sparkle.style.left = `${Math.random() * 100}%`;
+        sparkle.style.top = `${Math.random() * 100}%`;
+        
+        // Random animation delay
+        sparkle.style.animationDelay = `${Math.random() * 2}s`;
+        
+        container.appendChild(sparkle);
+    }
+}
+
+// Neon cursor trail effect
+function createCursorTrail() {
+    const trails = [];
+    const trailCount = 10;
+    
+    for (let i = 0; i < trailCount; i++) {
+        const trail = document.createElement('div');
+        trail.classList.add('cursor-trail');
+        document.body.appendChild(trail);
+        trails.push({
+            element: trail,
+            x: 0,
+            y: 0,
+            opacity: 0
+        });
+    }
+    
+    let currentTrail = 0;
+    
+    document.addEventListener('mousemove', (e) => {
+        const trail = trails[currentTrail];
+        trail.x = e.clientX;
+        trail.y = e.clientY;
+        trail.opacity = 1;
+        
+        trail.element.style.left = `${trail.x}px`;
+        trail.element.style.top = `${trail.y}px`;
+        trail.element.style.opacity = trail.opacity;
+        
+        // Random neon color for each trail
+        const colors = ['var(--neon-pink)', 'var(--neon-blue)', 'var(--neon-purple)'];
+        const randomColor = colors[Math.floor(Math.random() * colors.length)];
+        trail.element.style.background = randomColor;
+        trail.element.style.boxShadow = `0 0 10px ${randomColor}, 0 0 20px ${randomColor}`;
+        
+        currentTrail = (currentTrail + 1) % trailCount;
+        
+        // Fade out trails
+        setTimeout(() => {
+            trail.opacity = 0;
+            trail.element.style.opacity = trail.opacity;
+        }, 300);
+    });
+}
+
+// Debug function to test image loading
+function debugImageLoading() {
+    console.log('=== DEBUGGING IMAGE LOADING ===');
+    
+    // Test a few specific files
+    const testFiles = [
+        'DSC_5669.JPG',
+        'DSC_5670.JPG', 
+        'DSC_5671.JPG',
+        'DSC_5868.JPG'
+    ];
+    
+    testFiles.forEach(filename => {
+        const img = new Image();
+        img.onload = function() {
+            console.log(`✅ SUCCESS: ${filename} loaded successfully`);
+            console.log(`   Full URL: ${img.src}`);
+            console.log(`   Dimensions: ${img.naturalWidth}x${img.naturalHeight}`);
+        };
+        img.onerror = function() {
+            console.log(`❌ FAILED: ${filename} failed to load`);
+            console.log(`   Attempted URL: ${img.src}`);
+        };
+        img.src = filename;
+    });
+}
+
+// GitHub Pages compatible function to load gallery images
+function loadGalleryImages() {
+    const gallery = document.getElementById('gallery');
+    
+    // Clear any existing content and create container for immediate display
+    gallery.innerHTML = '<div class="loading-gallery" style="grid-column: 1 / -1; text-align: center; padding: 1rem; color: var(--text-secondary);"><i class="fas fa-spinner fa-spin"></i> Loading photos... <span id="loadedCount">0</span>/<span id="totalCount">0</span><br><small id="debugInfo">Starting diagnostic...</small></div><div class="gallery-images-container" style="display: contents;"></div>';
+    
+    console.log('Starting photo loading with debugging...');
+    
+    // Start debugging
+    debugImageLoading();
+    
+    // Generate file list - try different ranges
+    const imageFiles = generateFileList(5669, 5868);
+    
+    console.log(`Attempting to load ${imageFiles.length} photos`);
+    document.getElementById('debugInfo').textContent = `Testing ${imageFiles.length} files from DSC_5669.JPG to DSC_5868.JPG`;
+    
+    loadImagesWithProgress(gallery, imageFiles);
+}
+
+// Generate file list from start to end numbers
+function generateFileList(start, end) {
+    const files = [];
+    for (let i = start; i <= end; i++) {
+        // Try multiple extensions
+        files.push(`DSC_${i.toString().padStart(4, '0')}.JPG`);
+        files.push(`DSC_${i.toString().padStart(4, '0')}.jpg`);
+    }
+    return files;
+}
+
+// Load images with progress tracking and immediate display
+function loadImagesWithProgress(gallery, imageFiles) {
+    const imagesContainer = gallery.querySelector('.gallery-images-container');
+    const loadedCountEl = document.getElementById('loadedCount');
+    const totalCountEl = document.getElementById('totalCount');
+    const debugInfoEl = document.getElementById('debugInfo');
+    
+    let loadedCount = 0;
+    let successfullyLoaded = 0;
+    const totalImages = imageFiles.length;
+    
+    totalCountEl.textContent = totalImages;
+    
+    console.log(`Loading ${totalImages} images...`);
+    
+    // Load each image and display immediately
+    imageFiles.forEach((filename, index) => {
+        const img = new Image();
+        
+        img.onload = function() {
+            loadedCount++;
+            successfullyLoaded++;
+            loadedCountEl.textContent = loadedCount;
+            debugInfoEl.textContent = `Loaded: ${successfullyLoaded}/${totalImages} | Current: ${filename}`;
+            
+            console.log(`✅ Loaded: ${filename}`);
+            
+            // Display the successfully loaded image immediately
+            displaySingleImage(imagesContainer, filename, successfullyLoaded - 1);
+            
+            // Update loading message
+            updateLoadingMessage(loadedCount, totalImages, successfullyLoaded);
+            
+            // Remove loading message when all images are processed
+            if (loadedCount === totalImages) {
+                setTimeout(() => {
+                    const loadingEl = document.querySelector('.loading-gallery');
+                    if (loadingEl) {
+                        if (successfullyLoaded > 0) {
+                            loadingEl.innerHTML = `<i class="fas fa-check"></i> Complete! Loaded ${successfullyLoaded} photos`;
+                            setTimeout(() => {
+                                loadingEl.remove();
+                            }, 3000);
+                        } else {
+                            showNoImagesPlaceholder(gallery);
+                        }
+                    }
+                }, 1000);
+            }
+        };
+        
+        img.onerror = function() {
+            loadedCount++;
+            loadedCountEl.textContent = loadedCount;
+            debugInfoEl.textContent = `Failed: ${filename} | Loaded: ${successfullyLoaded}/${totalImages}`;
+            console.log(`❌ Failed: ${filename}`);
+            
+            updateLoadingMessage(loadedCount, totalImages, successfullyLoaded);
+            
+            // Remove loading message when all images are processed
+            if (loadedCount === totalImages) {
+                setTimeout(() => {
+                    const loadingEl = document.querySelector('.loading-gallery');
+                    if (loadingEl) {
+                        if (successfullyLoaded === 0) {
+                            showNoImagesPlaceholder(gallery);
+                        } else {
+                            loadingEl.innerHTML = `<i class="fas fa-check"></i> Complete! Loaded ${successfullyLoaded} out of ${totalImages} photos`;
+                            setTimeout(() => {
+                                loadingEl.remove();
+                            }, 3000);
+                        }
+                    }
+                }, 1000);
+            }
+        };
+        
+        // Load image
+        img.src = filename;
+    });
+    
+    // Update download button
+    updateDownloadButton();
+}
+
+// Function to display a single image immediately when loaded
+function displaySingleImage(container, filename, index) {
+    const galleryItem = document.createElement('div');
+    galleryItem.classList.add('gallery-item');
+    galleryItem.style.animation = 'fadeInUp 0.5s ease-out';
+    
+    const img = document.createElement('img');
+    img.src = filename;
+    img.alt = `Amrutha and Karthik engagement photo ${index + 1}`;
+    img.classList.add('gallery-image');
+    img.loading = 'lazy';
+    
+    // Ensure proper styling
+    img.style.width = '100%';
+    img.style.height = '100%';
+    img.style.objectFit = 'cover';
+    
+    galleryItem.addEventListener('click', () => {
+        openImageModal(index);
+    });
+    
+    galleryItem.appendChild(img);
+    container.appendChild(galleryItem);
+}
+
+// Get all currently loaded images from the gallery
+function getAllLoadedImages() {
+    const galleryImages = document.querySelectorAll('.gallery-image');
+    return Array.from(galleryImages).map(img => img.src);
+}
+
+// Update loading message
+function updateLoadingMessage(loaded, total, successful) {
+    const loadingEl = document.querySelector('.loading-gallery');
+    if (loadingEl) {
+        loadingEl.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Loading photos... ${loaded}/${total} (${successful} found)<br><small id="debugInfo">Testing files...</small>`;
+    }
+}
+
+// Function to show placeholder when no images are found
+function showNoImagesPlaceholder(gallery) {
+    gallery.innerHTML = `
+        <div class="no-images-placeholder" style="grid-column: 1 / -1; text-align: center; padding: 4rem;">
+            <i class="fas fa-images" style="font-size: 4rem; color: var(--text-secondary); margin-bottom: 1.5rem;"></i>
+            <h3 style="color: var(--text-secondary); font-family: 'Cormorant Garamond', serif; margin-bottom: 1rem;">
+                No Photos Found
+            </h3>
+            <p style="color: var(--text-secondary); max-width: 500px; margin: 0 auto;">
+                No photos were loaded. Possible issues:<br><br>
+                1. Files are not in the same directory as HTML<br>
+                2. File names don't match DSC_5669.JPG pattern<br>
+                3. GitHub Pages is not deployed from correct branch<br>
+                4. File extensions are different (.jpg vs .JPG)<br><br>
+                Check browser console for detailed debugging info.
+            </p>
+            <button onclick="debugImageLoading()" class="download-btn" style="margin-top: 1rem;">
+                <i class="fas fa-bug"></i> Run Debug Test
+            </button>
+            <button onclick="checkGitHubFiles()" class="download-btn" style="margin-top: 0.5rem; background: #28a745;">
+                <i class="fab fa-github"></i> Check GitHub Repository
+            </button>
+        </div>
+    `;
+}
+
+function checkGitHubFiles() {
+    // Open GitHub repository in new tab
+    const repoUrl = 'https://github.com/Abhivocopedia/AmruthaAndKartik';
+    window.open(repoUrl, '_blank');
+    
+    // Also test with direct GitHub raw URLs
+    console.log('🔗 Testing direct GitHub URLs...');
+    
+    const testRawUrls = [
+        'https://raw.githubusercontent.com/Abhivocopedia/AmruthaAndKartik/master/DSC_5669.JPG',
+        'https://raw.githubusercontent.com/Abhivocopedia/AmruthaAndKartik/master/DSC_5670.JPG'
+    ];
+    
+    testRawUrls.forEach(url => {
+        const img = new Image();
+        img.onload = () => console.log(`✅ Raw URL works: ${url}`);
+        img.onerror = () => console.log(`❌ Raw URL failed: ${url}`);
+        img.src = url;
+    });
+}
+
+// Update download button with currently loaded images
+function updateDownloadButton() {
+    const downloadAllBtn = document.getElementById('downloadAllBtn');
+    if (downloadAllBtn) {
+        const newBtn = downloadAllBtn.cloneNode(true);
+        downloadAllBtn.parentNode.replaceChild(newBtn, downloadAllBtn);
+        
+        newBtn.addEventListener('click', function() {
+            // Get only the successfully loaded images
+            const loadedImages = getAllLoadedImages();
+            if (loadedImages.length === 0) {
+                alert('No photos available to download.');
+                return;
+            }
+            
+            if (confirm(`Download all ${loadedImages.length} photos?`)) {
+                loadedImages.forEach((imageUrl, index) => {
+                    setTimeout(() => {
+                        downloadImage(imageUrl, `engagement-memory-${index + 1}.jpg`);
+                    }, index * 300);
+                });
+                alert(`Download started! ${loadedImages.length} photos downloading.`);
+            }
+        });
+        
+        newBtn.innerHTML = `<i class="fas fa-download"></i> Download Photos`;
+    }
+}
+
+// Helper function to download individual images
+function downloadImage(imageUrl, filename) {
+    const link = document.createElement('a');
+    link.href = imageUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+// Modal functionality variables
+let currentImageIndex = 0;
+let galleryImages = [];
+
+// Modified openImageModal to use currently loaded images
+function openImageModal(index) {
+    galleryImages = getAllLoadedImages();
+    
+    if (galleryImages.length === 0) {
+        alert('No photos available to view.');
+        return;
+    }
+    
+    currentImageIndex = index;
+    if (modalImage && modal) {
+        modalImage.src = galleryImages[currentImageIndex];
+        modal.style.display = 'flex';
+    }
+}
+
+// Function to show previous image in modal
+function showPreviousImage() {
+    if (galleryImages.length === 0) return;
+    currentImageIndex = (currentImageIndex - 1 + galleryImages.length) % galleryImages.length;
+    if (modalImage) {
+        modalImage.src = galleryImages[currentImageIndex];
+    }
+}
+
+// Function to show next image in modal
+function showNextImage() {
+    if (galleryImages.length === 0) return;
+    currentImageIndex = (currentImageIndex + 1) % galleryImages.length;
+    if (modalImage) {
+        modalImage.src = galleryImages[currentImageIndex];
+    }
+}
+
+// Mini timer function
+function updateMiniTimer() {
+    const now = new Date();
+    let targetDate;
+    
+    const engagementDate = new Date('October 19, 2025 12:00:00');
+    const marriageDate = new Date('March 12, 2026 12:00:00');
+    
+    if (now < engagementDate) {
+        targetDate = engagementDate;
+    } else if (now < marriageDate) {
+        targetDate = marriageDate;
+    } else {
+        document.getElementById('miniDays').textContent = '00';
+        document.getElementById('miniHours').textContent = '00';
+        document.getElementById('miniMinutes').textContent = '00';
+        document.getElementById('miniSeconds').textContent = '00';
+        return;
+    }
+    
+    const timeRemaining = targetDate - now;
+    
+    if (timeRemaining <= 0) {
+        document.getElementById('miniDays').textContent = '00';
+        document.getElementById('miniHours').textContent = '00';
+        document.getElementById('miniMinutes').textContent = '00';
+        document.getElementById('miniSeconds').textContent = '00';
+        return;
+    }
+    
+    const days = Math.floor(timeRemaining / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((timeRemaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((timeRemaining % (1000 * 60)) / 1000);
+    
+    document.getElementById('miniDays').textContent = days.toString().padStart(2, '0');
+    document.getElementById('miniHours').textContent = hours.toString().padStart(2, '0');
+    document.getElementById('miniMinutes').textContent = minutes.toString().padStart(2, '0');
+    document.getElementById('miniSeconds').textContent = seconds.toString().padStart(2, '0');
+}
+
+// Main initialization function
+function initializeApp() {
+    const canvas = document.getElementById('webgl-canvas');
+    if (canvas) {
+        window.fluidSimulation = new FluidSimulation(canvas);
+        window.fluidSimulation.render();
+    }
+
+    createBackgroundParticles();
+    createWelcomeSparkles();
+    createCursorTrail();
+
+    const cursor = document.querySelector('.cursor');
+    const cursorFollower = document.querySelector('.cursor-follower');
+    
+    if (cursor && cursorFollower) {
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+            
+            setTimeout(() => {
+                cursorFollower.style.left = e.clientX + 'px';
+                cursorFollower.style.top = e.clientY + 'px';
+            }, 100);
+            
+            if (window.fluidSimulation) {
+                window.fluidSimulation.updatePointer(e.clientX, e.clientY);
+            }
+        });
+    }
+
+    const progressBar = document.getElementById('progressBar');
+    if (progressBar) {
+        let progress = 0;
+        const progressInterval = setInterval(() => {
+            progress += Math.random() * 10;
+            if (progress >= 100) {
+                progress = 100;
+                clearInterval(progressInterval);
+                
+                setTimeout(() => {
+                    const loadingScreen = document.getElementById('loading-screen');
+                    if (loadingScreen) {
+                        loadingScreen.style.opacity = '0';
+                        setTimeout(() => {
+                            loadingScreen.style.display = 'none';
+                        }, 1000);
+                    }
+                }, 500);
+            }
+            progressBar.style.width = `${progress}%`;
+        }, 200);
+    }
+
+    updateMiniTimer();
+    setInterval(updateMiniTimer, 1000);
+    
+    loadGalleryImages();
+    
+    const modal = document.getElementById('imageModal');
+    const modalImage = document.getElementById('modalImage');
+    const closeModal = document.getElementById('closeModal');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    
+    if (closeModal) {
+        closeModal.addEventListener('click', () => {
+            if (modal) modal.style.display = 'none';
+        });
+    }
+    
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+    }
+    
+    if (downloadBtn) {
+        downloadBtn.addEventListener('click', () => {
+            if (modalImage) {
+                const imageUrl = modalImage.src;
+                const filename = `engagement-memory-${currentImageIndex + 1}.jpg`;
+                downloadImage(imageUrl, filename);
+            }
+        });
+    }
+    
+    if (prevBtn) prevBtn.addEventListener('click', showPreviousImage);
+    if (nextBtn) nextBtn.addEventListener('click', showNextImage);
+    
+    document.addEventListener('keydown', (e) => {
+        if (modal && modal.style.display === 'flex') {
+            if (e.key === 'ArrowLeft') showPreviousImage();
+            if (e.key === 'ArrowRight') showNextImage();
+            if (e.key === 'Escape') modal.style.display = 'none';
+        }
+    });
+}
+
+// Start the application when DOM is loaded
+document.addEventListener('DOMContentLoaded', initializeApp);
     </script>
 </body>
 </html>
