@@ -1292,123 +1292,143 @@ function createCursorTrail() {
     });
 }
 
-// Function to load and display gallery images - DISPLAY AS FOUND
+// GitHub Pages compatible function to load gallery images
 function loadGalleryImages() {
     const gallery = document.getElementById('gallery');
     
     // Clear any existing content and create container for immediate display
-    gallery.innerHTML = '<div class="loading-gallery" style="grid-column: 1 / -1; text-align: center; padding: 1rem; color: var(--text-secondary);"><i class="fas fa-spinner fa-spin"></i> Scanning for photos... Found: 0 so far</div><div class="gallery-images-container" style="display: contents;"></div>';
+    gallery.innerHTML = '<div class="loading-gallery" style="grid-column: 1 / -1; text-align: center; padding: 1rem; color: var(--text-secondary);"><i class="fas fa-spinner fa-spin"></i> Loading photos... <span id="loadedCount">0</span>/<span id="totalCount">0</span></div><div class="gallery-images-container" style="display: contents;"></div>';
     
-    console.log('Starting photo scanning with immediate display...');
+    console.log('Starting photo loading for GitHub Pages...');
     
-    // Scan the range
-    loadAllPhotosInRange(5550, 7000).then(foundImages => {
-        // Remove loading message when done
-        const loadingEl = document.querySelector('.loading-gallery');
-        if (loadingEl) {
-            loadingEl.innerHTML = `<i class="fas fa-check"></i> Scan complete! Found ${foundImages.length} photos`;
-            setTimeout(() => {
-                loadingEl.remove();
-            }, 2000);
-        }
-        
-        console.log(`Scan complete! Found ${foundImages.length} images`);
-    }).catch(error => {
-        console.error('Error scanning for images:', error);
-        showNoImagesPlaceholder(gallery);
-    });
+    // PRE-GENERATED LIST FOR GITHUB PAGES - ALL POSSIBLE FILES FROM 5669-7000
+    const imageFiles = generateImageList(5669, 7000);
+    
+    console.log(`Attempting to load ${imageFiles.length} potential photos`);
+    loadImagesWithProgress(gallery, imageFiles);
 }
 
-// Simple function to load all photos in range - DISPLAY AS FOUND VERSION
-async function loadAllPhotosInRange(start, end) {
-    const foundImages = [];
+// Generate complete list of all possible image files
+function generateImageList(start, end) {
+    const imageFiles = [];
     const extensions = ['.JPG', '.jpg', '.JPEG', '.jpeg'];
-    let scanned = 0;
-    const gallery = document.getElementById('gallery');
-    const imagesContainer = gallery.querySelector('.gallery-images-container');
     
-    // Update progress
-    const updateProgress = () => {
-        scanned++;
-        const loadingEl = document.querySelector('.loading-gallery');
-        if (loadingEl) {
-            loadingEl.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Scanning... Found: ${foundImages.length} photos`;
-        }
-    };
-    
-    // Check every number in the range
     for (let i = start; i <= end; i++) {
         const numberStr = i.toString().padStart(4, '0');
-        
         for (const ext of extensions) {
-            const filename = `DSC_${numberStr}${ext}`;
-            const exists = await checkImageExists(filename);
-            updateProgress();
-            
-            if (exists) {
-                foundImages.push(filename);
-                console.log(`✓ Found: ${filename}`);
-                
-                // IMMEDIATELY DISPLAY THE FOUND IMAGE
-                displaySingleImage(imagesContainer, filename, foundImages.length - 1, foundImages);
-            }
+            imageFiles.push(`DSC_${numberStr}${ext}`);
         }
     }
     
-    // Update download button with all found images
-    updateDownloadButton(foundImages);
-    
-    return foundImages;
+    return imageFiles;
 }
 
-// Function to display a single image immediately when found
+// Load images with progress tracking and immediate display
+function loadImagesWithProgress(gallery, imageFiles) {
+    const imagesContainer = gallery.querySelector('.gallery-images-container');
+    const loadedCountEl = document.getElementById('loadedCount');
+    const totalCountEl = document.getElementById('totalCount');
+    
+    let loadedCount = 0;
+    let successfullyLoaded = 0;
+    const totalImages = imageFiles.length;
+    
+    totalCountEl.textContent = totalImages;
+    
+    console.log(`Loading ${totalImages} potential images...`);
+    
+    // Load each image and display immediately if it exists
+    imageFiles.forEach((filename, index) => {
+        const img = new Image();
+        
+        img.onload = function() {
+            loadedCount++;
+            successfullyLoaded++;
+            loadedCountEl.textContent = loadedCount;
+            
+            // Display the successfully loaded image immediately
+            displaySingleImage(imagesContainer, filename, successfullyLoaded - 1, imageFiles);
+            
+            // Update loading message
+            updateLoadingMessage(loadedCount, totalImages, successfullyLoaded);
+            
+            // Remove loading message when all images are processed
+            if (loadedCount === totalImages) {
+                setTimeout(() => {
+                    const loadingEl = document.querySelector('.loading-gallery');
+                    if (loadingEl) {
+                        loadingEl.innerHTML = `<i class="fas fa-check"></i> Complete! ${successfullyLoaded} photos loaded out of ${totalImages} checked`;
+                        setTimeout(() => {
+                            loadingEl.remove();
+                        }, 3000);
+                    }
+                }, 1000);
+            }
+        };
+        
+        img.onerror = function() {
+            loadedCount++;
+            loadedCountEl.textContent = loadedCount;
+            updateLoadingMessage(loadedCount, totalImages, successfullyLoaded);
+            
+            // Remove loading message when all images are processed
+            if (loadedCount === totalImages) {
+                setTimeout(() => {
+                    const loadingEl = document.querySelector('.loading-gallery');
+                    if (loadingEl) {
+                        loadingEl.innerHTML = `<i class="fas fa-check"></i> Complete! ${successfullyLoaded} photos loaded out of ${totalImages} checked`;
+                        setTimeout(() => {
+                            loadingEl.remove();
+                        }, 3000);
+                    }
+                }, 1000);
+            }
+        };
+        
+        img.src = filename;
+    });
+    
+    // Update download button with the full list (will be filtered by what actually loads)
+    updateDownloadButton(imageFiles);
+}
+
+// Update loading message
+function updateLoadingMessage(loaded, total, successful) {
+    const loadingEl = document.querySelector('.loading-gallery');
+    if (loadingEl) {
+        loadingEl.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Loading photos... ${loaded}/${total} (${successful} found)`;
+    }
+}
+
+// Function to display a single image immediately when loaded
 function displaySingleImage(container, filename, index, imageFiles) {
     const galleryItem = document.createElement('div');
     galleryItem.classList.add('gallery-item');
     galleryItem.style.animation = 'fadeInUp 0.5s ease-out';
     
-    const img = new Image();
+    const img = document.createElement('img');
     img.src = filename;
     img.alt = `Amrutha and Karthik engagement photo ${index + 1}`;
     img.classList.add('gallery-image');
     img.loading = 'lazy';
     
-    img.onload = function() {
-        // Ensure proper styling
-        img.style.width = '100%';
-        img.style.height = '100%';
-        img.style.objectFit = 'cover';
-    };
-    
-    img.onerror = function() {
-        console.error(`❌ Failed to load: ${filename}`);
-        galleryItem.remove();
-    };
+    // Ensure proper styling
+    img.style.width = '100%';
+    img.style.height = '100%';
+    img.style.objectFit = 'cover';
     
     galleryItem.addEventListener('click', () => {
-        openImageModal(index, imageFiles);
+        openImageModal(index, getAllLoadedImages());
     });
     
     galleryItem.appendChild(img);
     container.appendChild(galleryItem);
 }
 
-// Function to extract number from filename
-function extractNumber(filename) {
-    const match = filename.match(/\d+/);
-    return match ? parseInt(match[0]) : 0;
-}
-
-// Image existence check
-function checkImageExists(url) {
-    return new Promise((resolve) => {
-        const img = new Image();
-        img.onload = () => resolve(true);
-        img.onerror = () => resolve(false);
-        img.src = url;
-        
-        setTimeout(() => resolve(false), 100);
-    });
+// Get all currently loaded images from the gallery
+function getAllLoadedImages() {
+    const galleryImages = document.querySelectorAll('.gallery-image');
+    return Array.from(galleryImages).map(img => img.src);
 }
 
 // Function to show placeholder when no images are found
@@ -1420,14 +1440,9 @@ function showNoImagesPlaceholder(gallery) {
                 No Photos Found
             </h3>
             <p style="color: var(--text-secondary); max-width: 500px; margin: 0 auto;">
-                No DSC_*.JPG files found in range 5550-7000.<br>
-                Please check:
+                No DSC_*.JPG files were found.<br>
+                Please make sure your photos are uploaded to GitHub.
             </p>
-            <ul style="color: var(--text-secondary); text-align: left; max-width: 500px; margin: 1rem auto;">
-                <li>Photos are in same folder as webpage</li>
-                <li>File names are exactly: DSC_5551.JPG, DSC_5552.JPG, etc.</li>
-                <li>File extensions are .JPG (not .jpg or .jpeg)</li>
-            </ul>
         </div>
     `;
 }
@@ -1435,24 +1450,32 @@ function showNoImagesPlaceholder(gallery) {
 // Update download button with found images
 function updateDownloadButton(imageFiles) {
     const downloadAllBtn = document.getElementById('downloadAllBtn');
-    if (downloadAllBtn && imageFiles.length > 0) {
+    if (downloadAllBtn) {
         const newBtn = downloadAllBtn.cloneNode(true);
         downloadAllBtn.parentNode.replaceChild(newBtn, downloadAllBtn);
         
         newBtn.addEventListener('click', function() {
-            if (confirm(`Download all ${imageFiles.length} photos?`)) {
-                imageFiles.forEach((filename, index) => {
+            // Get only the successfully loaded images
+            const loadedImages = getAllLoadedImages();
+            if (loadedImages.length === 0) {
+                alert('No photos available to download.');
+                return;
+            }
+            
+            if (confirm(`Download all ${loadedImages.length} loaded photos?`)) {
+                loadedImages.forEach((imageUrl, index) => {
                     setTimeout(() => {
-                        downloadImage(filename, `engagement-memory-${index + 1}.jpg`);
+                        // Extract filename from URL
+                        const filename = imageUrl.split('/').pop();
+                        downloadImage(imageUrl, `engagement-memory-${index + 1}.jpg`);
                     }, index * 300);
                 });
-                alert(`Download started! ${imageFiles.length} photos downloading.`);
+                alert(`Download started! ${loadedImages.length} photos downloading.`);
             }
         });
         
-        newBtn.innerHTML = `<i class="fas fa-download"></i> Download All ${imageFiles.length} Photos`;
-    } else if (downloadAllBtn) {
-        downloadAllBtn.style.display = 'none';
+        // Button will update dynamically as images load
+        newBtn.innerHTML = `<i class="fas fa-download"></i> Download Photos`;
     }
 }
 
@@ -1475,8 +1498,12 @@ function openImageModal(index, customImageList = null) {
     if (customImageList) {
         galleryImages = customImageList;
     } else {
-        const galleryItems = document.querySelectorAll('.gallery-image');
-        galleryImages = Array.from(galleryItems).map(img => img.src);
+        galleryImages = getAllLoadedImages();
+    }
+    
+    if (galleryImages.length === 0) {
+        alert('No photos available to view.');
+        return;
     }
     
     currentImageIndex = index;
