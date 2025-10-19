@@ -641,6 +641,7 @@
             cursor: pointer;
             border: 1px solid var(--border);
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            animation: fadeInUp 0.5s ease-out;
         }
 
         .gallery-item img {
@@ -1012,34 +1013,32 @@
         </section>
         
         <!-- Gallery Section -->
-        <section class="section gallery-section">
-            <h2 class="section-title">Our Memories</h2>
-
-            <!-- Add Download Button Here -->
-            <div class="download-container" style="text-align: center; margin-bottom: 2rem;">
-                <button id="downloadAllBtn" class="download-btn">
-                    <i class="fas fa-download"></i>
-                    Download All Photos
-                </button>
-            </div>
-            
-            <div class="gallery" id="gallery">
-                <img src="1.jpg" alt="Memory 1">
-                <img src="2.jpg" alt="Memory 2">
-                <img src="3.jpg" alt="Memory 3">
-                <img src="4.jpg" alt="Memory 4">
-                <img src="5.jpg" alt="Memory 5">
-            </div>
-            
-            <!-- Bulk Photo Upload Placeholder -->
-            <div class="bulk-upload-placeholder">
-                <div class="placeholder-text">
-                    <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; margin-bottom: 1rem;"></i><br>
-                    More beautiful moments will be shared here soon
-                </div>
-            </div>
-        </section>
+<section class="section gallery-section">
+    <h2 class="section-title">Our Memories</h2>
+    
+    <!-- Download Button - will be updated dynamically -->
+    <div class="download-container" style="text-align: center; margin-bottom: 2rem;">
+        <button id="downloadAllBtn" class="download-btn">
+            <i class="fas fa-download"></i>
+            Download Photos
+        </button>
+        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.5rem;">
+            All photos will be automatically loaded
+        </p>
     </div>
+    
+    <div class="gallery" id="gallery">
+        <!-- Images will be automatically loaded here -->
+    </div>
+    
+    <!-- Fallback placeholder -->
+    <div class="bulk-upload-placeholder" style="display: none;">
+        <div class="placeholder-text">
+            <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; margin-bottom: 1rem;"></i><br>
+            More beautiful moments will be shared here soon
+        </div>
+    </div>
+</section>
     
     <!-- Marquee -->
     <div class="marquee-container">
@@ -1293,77 +1292,167 @@ function createCursorTrail() {
     });
 }
 
-// SINGLE CORRECTED Function to load and display gallery images with uniform sizing
+// Function to load and display gallery images - DISPLAY AS FOUND
 function loadGalleryImages() {
     const gallery = document.getElementById('gallery');
-    const imageFiles = ['1.jpg', '2.jpg', '3.jpg', '4.jpg', '5.jpg'];
     
-    // Clear any existing content
-    gallery.innerHTML = '';
+    // Clear any existing content and create container for immediate display
+    gallery.innerHTML = '<div class="loading-gallery" style="grid-column: 1 / -1; text-align: center; padding: 1rem; color: var(--text-secondary);"><i class="fas fa-spinner fa-spin"></i> Scanning for photos... Found: 0 so far</div><div class="gallery-images-container" style="display: contents;"></div>';
     
-    let loadedCount = 0;
-    const totalImages = imageFiles.length;
+    console.log('Starting photo scanning with immediate display...');
     
-    imageFiles.forEach((filename, index) => {
-        const galleryItem = document.createElement('div');
-        galleryItem.classList.add('gallery-item');
+    // Scan the range
+    loadAllPhotosInRange(5550, 7000).then(foundImages => {
+        // Remove loading message when done
+        const loadingEl = document.querySelector('.loading-gallery');
+        if (loadingEl) {
+            loadingEl.innerHTML = `<i class="fas fa-check"></i> Scan complete! Found ${foundImages.length} photos`;
+            setTimeout(() => {
+                loadingEl.remove();
+            }, 2000);
+        }
         
-        const img = new Image(); // Use Image constructor for better control
-        img.src = filename;
-        img.alt = `Amrutha and Karthik engagement photo ${index + 1}`;
-        img.classList.add('gallery-image');
-        img.loading = 'lazy';
-        
-        img.onload = function() {
-            loadedCount++;
-            console.log(`Loaded ${loadedCount}/${totalImages}: ${filename} (${img.naturalWidth}x${img.naturalHeight})`);
-            
-            // Force uniform styling
-            img.style.width = '100%';
-            img.style.height = '100%';
-            img.style.objectFit = 'cover'; // This ensures uniform cropping
-        };
-        
-        img.onerror = function() {
-            console.error(`Failed to load: ${filename}`);
-            loadedCount++;
-            
-            // Create placeholder
-            galleryItem.innerHTML = `
-                <div class="placeholder-text" style="padding: 2rem; text-align: center; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-                    <i class="fas fa-image" style="font-size: 3rem; margin-bottom: 1rem; color: var(--text-secondary);"></i>
-                    <span style="color: var(--text-secondary); font-family: 'Cormorant Garamond', serif;">Memory ${index + 1}</span>
-                </div>
-            `;
-        };
-        
-        galleryItem.addEventListener('click', () => {
-            openImageModal(index);
-        });
-        
-        galleryItem.appendChild(img);
-        gallery.appendChild(galleryItem);
+        console.log(`Scan complete! Found ${foundImages.length} images`);
+    }).catch(error => {
+        console.error('Error scanning for images:', error);
+        showNoImagesPlaceholder(gallery);
     });
 }
 
-// Download All Photos Functionality
-function setupDownloadAll() {
-    const downloadAllBtn = document.getElementById('downloadAllBtn');
+// Simple function to load all photos in range - DISPLAY AS FOUND VERSION
+async function loadAllPhotosInRange(start, end) {
+    const foundImages = [];
+    const extensions = ['.JPG', '.jpg', '.JPEG', '.jpeg'];
+    let scanned = 0;
+    const gallery = document.getElementById('gallery');
+    const imagesContainer = gallery.querySelector('.gallery-images-container');
     
-    if (downloadAllBtn) {
-        downloadAllBtn.addEventListener('click', function() {
-            const imageFiles = ['1.jpg', '2.jpg', '3.jpg', '4.jpg', '5.jpg'];
+    // Update progress
+    const updateProgress = () => {
+        scanned++;
+        const loadingEl = document.querySelector('.loading-gallery');
+        if (loadingEl) {
+            loadingEl.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Scanning... Found: ${foundImages.length} photos`;
+        }
+    };
+    
+    // Check every number in the range
+    for (let i = start; i <= end; i++) {
+        const numberStr = i.toString().padStart(4, '0');
+        
+        for (const ext of extensions) {
+            const filename = `DSC_${numberStr}${ext}`;
+            const exists = await checkImageExists(filename);
+            updateProgress();
             
-            // Create and trigger downloads for each image
-            imageFiles.forEach((filename, index) => {
-                setTimeout(() => {
-                    downloadImage(filename, `engagement-memory-${index + 1}.jpg`);
-                }, index * 500); // Stagger downloads to avoid blocking
-            });
-            
-            // Show success message
-            alert('Download started! Your photos are being downloaded one by one.');
+            if (exists) {
+                foundImages.push(filename);
+                console.log(`✓ Found: ${filename}`);
+                
+                // IMMEDIATELY DISPLAY THE FOUND IMAGE
+                displaySingleImage(imagesContainer, filename, foundImages.length - 1, foundImages);
+            }
+        }
+    }
+    
+    // Update download button with all found images
+    updateDownloadButton(foundImages);
+    
+    return foundImages;
+}
+
+// Function to display a single image immediately when found
+function displaySingleImage(container, filename, index, imageFiles) {
+    const galleryItem = document.createElement('div');
+    galleryItem.classList.add('gallery-item');
+    galleryItem.style.animation = 'fadeInUp 0.5s ease-out';
+    
+    const img = new Image();
+    img.src = filename;
+    img.alt = `Amrutha and Karthik engagement photo ${index + 1}`;
+    img.classList.add('gallery-image');
+    img.loading = 'lazy';
+    
+    img.onload = function() {
+        // Ensure proper styling
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.objectFit = 'cover';
+    };
+    
+    img.onerror = function() {
+        console.error(`❌ Failed to load: ${filename}`);
+        galleryItem.remove();
+    };
+    
+    galleryItem.addEventListener('click', () => {
+        openImageModal(index, imageFiles);
+    });
+    
+    galleryItem.appendChild(img);
+    container.appendChild(galleryItem);
+}
+
+// Function to extract number from filename
+function extractNumber(filename) {
+    const match = filename.match(/\d+/);
+    return match ? parseInt(match[0]) : 0;
+}
+
+// Image existence check
+function checkImageExists(url) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(true);
+        img.onerror = () => resolve(false);
+        img.src = url;
+        
+        setTimeout(() => resolve(false), 100);
+    });
+}
+
+// Function to show placeholder when no images are found
+function showNoImagesPlaceholder(gallery) {
+    gallery.innerHTML = `
+        <div class="no-images-placeholder" style="grid-column: 1 / -1; text-align: center; padding: 4rem;">
+            <i class="fas fa-images" style="font-size: 4rem; color: var(--text-secondary); margin-bottom: 1.5rem;"></i>
+            <h3 style="color: var(--text-secondary); font-family: 'Cormorant Garamond', serif; margin-bottom: 1rem;">
+                No Photos Found
+            </h3>
+            <p style="color: var(--text-secondary); max-width: 500px; margin: 0 auto;">
+                No DSC_*.JPG files found in range 5550-7000.<br>
+                Please check:
+            </p>
+            <ul style="color: var(--text-secondary); text-align: left; max-width: 500px; margin: 1rem auto;">
+                <li>Photos are in same folder as webpage</li>
+                <li>File names are exactly: DSC_5551.JPG, DSC_5552.JPG, etc.</li>
+                <li>File extensions are .JPG (not .jpg or .jpeg)</li>
+            </ul>
+        </div>
+    `;
+}
+
+// Update download button with found images
+function updateDownloadButton(imageFiles) {
+    const downloadAllBtn = document.getElementById('downloadAllBtn');
+    if (downloadAllBtn && imageFiles.length > 0) {
+        const newBtn = downloadAllBtn.cloneNode(true);
+        downloadAllBtn.parentNode.replaceChild(newBtn, downloadAllBtn);
+        
+        newBtn.addEventListener('click', function() {
+            if (confirm(`Download all ${imageFiles.length} photos?`)) {
+                imageFiles.forEach((filename, index) => {
+                    setTimeout(() => {
+                        downloadImage(filename, `engagement-memory-${index + 1}.jpg`);
+                    }, index * 300);
+                });
+                alert(`Download started! ${imageFiles.length} photos downloading.`);
+            }
         });
+        
+        newBtn.innerHTML = `<i class="fas fa-download"></i> Download All ${imageFiles.length} Photos`;
+    } else if (downloadAllBtn) {
+        downloadAllBtn.style.display = 'none';
     }
 }
 
@@ -1381,11 +1470,14 @@ function downloadImage(imageUrl, filename) {
 let currentImageIndex = 0;
 let galleryImages = [];
 
-// Function to open image in modal
-function openImageModal(index) {
-    // Get all gallery images
-    const galleryItems = document.querySelectorAll('.gallery-image');
-    galleryImages = Array.from(galleryItems).map(img => img.src);
+// Modified openImageModal to accept custom image list
+function openImageModal(index, customImageList = null) {
+    if (customImageList) {
+        galleryImages = customImageList;
+    } else {
+        const galleryItems = document.querySelectorAll('.gallery-image');
+        galleryImages = Array.from(galleryItems).map(img => img.src);
+    }
     
     currentImageIndex = index;
     if (modalImage && modal) {
@@ -1417,18 +1509,14 @@ function updateMiniTimer() {
     const now = new Date();
     let targetDate;
     
-    // Determine which event to count down to
     const engagementDate = new Date('October 19, 2025 12:00:00');
     const marriageDate = new Date('March 12, 2026 12:00:00');
     
     if (now < engagementDate) {
-        // Countdown to engagement
         targetDate = engagementDate;
     } else if (now < marriageDate) {
-        // Countdown to marriage
         targetDate = marriageDate;
     } else {
-        // Both events have passed
         document.getElementById('miniDays').textContent = '00';
         document.getElementById('miniHours').textContent = '00';
         document.getElementById('miniMinutes').textContent = '00';
@@ -1439,7 +1527,6 @@ function updateMiniTimer() {
     const timeRemaining = targetDate - now;
     
     if (timeRemaining <= 0) {
-        // Event has started/ended
         document.getElementById('miniDays').textContent = '00';
         document.getElementById('miniHours').textContent = '00';
         document.getElementById('miniMinutes').textContent = '00';
@@ -1460,23 +1547,16 @@ function updateMiniTimer() {
 
 // Main initialization function
 function initializeApp() {
-    // Initialize WebGL Fluid Simulation
     const canvas = document.getElementById('webgl-canvas');
     if (canvas) {
-        const fluidSimulation = new FluidSimulation(canvas);
-        fluidSimulation.render();
+        window.fluidSimulation = new FluidSimulation(canvas);
+        window.fluidSimulation.render();
     }
 
-    // Create background particles
     createBackgroundParticles();
-    
-    // Create welcome sparkles
     createWelcomeSparkles();
-    
-    // Create cursor trail effect
     createCursorTrail();
 
-    // Custom cursor
     const cursor = document.querySelector('.cursor');
     const cursorFollower = document.querySelector('.cursor-follower');
     
@@ -1490,14 +1570,12 @@ function initializeApp() {
                 cursorFollower.style.top = e.clientY + 'px';
             }, 100);
             
-            // Update fluid simulation pointer
             if (window.fluidSimulation) {
                 window.fluidSimulation.updatePointer(e.clientX, e.clientY);
             }
         });
     }
 
-    // Loading progress bar
     const progressBar = document.getElementById('progressBar');
     if (progressBar) {
         let progress = 0;
@@ -1507,7 +1585,6 @@ function initializeApp() {
                 progress = 100;
                 clearInterval(progressInterval);
                 
-                // Hide loading screen after progress completes
                 setTimeout(() => {
                     const loadingScreen = document.getElementById('loading-screen');
                     if (loadingScreen) {
@@ -1522,17 +1599,11 @@ function initializeApp() {
         }, 200);
     }
 
-    // Initialize timer
     updateMiniTimer();
     setInterval(updateMiniTimer, 1000);
     
-    // Load gallery images
     loadGalleryImages();
     
-    // Setup download functionality
-    setupDownloadAll();
-    
-    // Modal functionality
     const modal = document.getElementById('imageModal');
     const modalImage = document.getElementById('modalImage');
     const closeModal = document.getElementById('closeModal');
@@ -1540,7 +1611,6 @@ function initializeApp() {
     const prevBtn = document.getElementById('prevBtn');
     const nextBtn = document.getElementById('nextBtn');
     
-    // Close modal when clicking X or outside image
     if (closeModal) {
         closeModal.addEventListener('click', () => {
             if (modal) modal.style.display = 'none';
@@ -1555,7 +1625,6 @@ function initializeApp() {
         });
     }
     
-    // Download functionality for individual image in modal
     if (downloadBtn) {
         downloadBtn.addEventListener('click', () => {
             if (modalImage) {
@@ -1566,11 +1635,9 @@ function initializeApp() {
         });
     }
     
-    // Navigation between images
     if (prevBtn) prevBtn.addEventListener('click', showPreviousImage);
     if (nextBtn) nextBtn.addEventListener('click', showNextImage);
     
-    // Keyboard navigation
     document.addEventListener('keydown', (e) => {
         if (modal && modal.style.display === 'flex') {
             if (e.key === 'ArrowLeft') showPreviousImage();
