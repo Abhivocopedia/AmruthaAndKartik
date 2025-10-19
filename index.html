@@ -42,8 +42,6 @@
             padding-bottom: 40px; /* Space for marquee */
         }
         
-        
-        
         /* WebGL Canvas */
         #webgl-canvas {
             position: fixed;
@@ -615,25 +613,26 @@
         }
         
         /* Photo Gallery */
+        /* Photo Gallery - FIXED Uniform Sizing */
         .gallery-section {
             background: var(--secondary);
             padding: 4rem 3rem;
             border-radius: 12px;
             margin-bottom: 3rem;
         }
-        
+
         .gallery {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 2rem;
             margin-top: 2rem;
         }
-        
+
         .gallery-item {
             position: relative;
             border-radius: 8px;
             overflow: hidden;
-            height: 280px;
+            aspect-ratio: 1; /* This ensures square containers */
             background: var(--card-bg);
             display: flex;
             align-items: center;
@@ -643,31 +642,47 @@
             border: 1px solid var(--border);
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
         }
-        
-        .gallery-item:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.1);
-        }
-        
+
         .gallery-item img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: cover; /* This ensures images fill the container properly */
             transition: var(--transition);
         }
-        
+
         .gallery-item:hover img {
             transform: scale(1.05);
         }
-        
-        .placeholder-text {
-            color: var(--text-secondary);
-            font-style: italic;
-            text-align: center;
-            padding: 2rem;
-            font-family: 'Cormorant Garamond', serif;
+
+        /* Download Button Styles */
+        .download-btn {
+            background: var(--accent);
+            color: var(--primary);
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            font-size: 1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.8rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .download-btn:hover {
+            background: var(--text-primary);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .download-btn i {
             font-size: 1.2rem;
         }
+
+        
         
         /* Fullscreen Modal */
         .modal {
@@ -882,6 +897,7 @@
                 display: none;
             }
         }
+        
     </style>
 </head>
 <body>
@@ -998,24 +1014,28 @@
         <!-- Gallery Section -->
         <section class="section gallery-section">
             <h2 class="section-title">Our Memories</h2>
+
+            <!-- Add Download Button Here -->
+            <div class="download-container" style="text-align: center; margin-bottom: 2rem;">
+                <button id="downloadAllBtn" class="download-btn">
+                    <i class="fas fa-download"></i>
+                    Download All Photos
+                </button>
+            </div>
             
             <div class="gallery" id="gallery">
-                <!-- Photos will be loaded from backend -->
-                
-                <div class="gallery-item">
-                    <img src="1.jpg" alt="Amrutha and Karthik engagement photo 2" class="gallery-image">
-                </div>
-                <div class="gallery-item">
-                    <img src="2.jpg" alt="Amrutha and Karthik engagement photo 2" class="gallery-image">
-                </div>
-                <div class="gallery-item">
-                    <img src="3.jpg" alt="Amrutha and Karthik engagement photo 2" class="gallery-image">
-                </div>
-                <div class="gallery-item">
-                    <img src="4.jpg" alt="Amrutha and Karthik engagement photo 2" class="gallery-image">
-                </div>
-                <div class="gallery-item">
-                    <img src="5.jpg" alt="Amrutha and Karthik engagement photo 2" class="gallery-image">
+                <img src="1.jpg" alt="Memory 1">
+                <img src="2.jpg" alt="Memory 2">
+                <img src="3.jpg" alt="Memory 3">
+                <img src="4.jpg" alt="Memory 4">
+                <img src="5.jpg" alt="Memory 5">
+            </div>
+            
+            <!-- Bulk Photo Upload Placeholder -->
+            <div class="bulk-upload-placeholder">
+                <div class="placeholder-text">
+                    <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; margin-bottom: 1rem;"></i><br>
+                    More beautiful moments will be shared here soon
                 </div>
             </div>
         </section>
@@ -1039,421 +1059,529 @@
 
     <script>
         // WebGL Fluid Simulation
-        class FluidSimulation {
-            constructor(canvas) {
-                this.canvas = canvas;
-                this.gl = canvas.getContext('webgl');
-                this.pointer = { x: 0.5, y: 0.5 };
-                this.init();
+class FluidSimulation {
+    constructor(canvas) {
+        this.canvas = canvas;
+        this.gl = canvas.getContext('webgl');
+        this.pointer = { x: 0.5, y: 0.5 };
+        this.init();
+    }
+
+    init() {
+        const gl = this.gl;
+        
+        // Vertex shader
+        const vertexShaderSource = `
+            attribute vec2 a_position;
+            void main() {
+                gl_Position = vec4(a_position, 0.0, 1.0);
             }
+        `;
 
-            init() {
-                const gl = this.gl;
+        // Fragment shader for fluid simulation
+        const fragmentShaderSource = `
+            precision highp float;
+            uniform vec2 resolution;
+            uniform vec2 pointer;
+            uniform float time;
+            
+            void main() {
+                vec2 uv = gl_FragCoord.xy / resolution.xy;
+                vec2 pointerUV = pointer / resolution.xy;
                 
-                // Vertex shader
-                const vertexShaderSource = `
-                    attribute vec2 a_position;
-                    void main() {
-                        gl_Position = vec4(a_position, 0.0, 1.0);
-                    }
-                `;
-
-                // Fragment shader for fluid simulation
-                const fragmentShaderSource = `
-                    precision highp float;
-                    uniform vec2 resolution;
-                    uniform vec2 pointer;
-                    uniform float time;
-                    
-                    void main() {
-                        vec2 uv = gl_FragCoord.xy / resolution.xy;
-                        vec2 pointerUV = pointer / resolution.xy;
-                        
-                        // Create fluid-like effect
-                        float dist = distance(uv, pointerUV);
-                        float intensity = 0.1 / (dist * 20.0);
-                        
-                        // Add time-based animation
-                        float wave = sin(time * 2.0 + dist * 20.0) * 0.1;
-                        intensity += wave;
-                        
-                        // Soft color gradient
-                        vec3 color = mix(
-                            vec3(0.9, 0.95, 1.0),
-                            vec3(0.8, 0.85, 0.9),
-                            intensity * 2.0
-                        );
-                        
-                        gl_FragColor = vec4(color, intensity * 0.3);
-                    }
-                `;
-
-                // Compile shaders
-                const vertexShader = this.compileShader(gl.VERTEX_SHADER, vertexShaderSource);
-                const fragmentShader = this.compileShader(gl.FRAGMENT_SHADER, fragmentShaderSource);
+                // Create fluid-like effect
+                float dist = distance(uv, pointerUV);
+                float intensity = 0.1 / (dist * 20.0);
                 
-                // Create program
-                this.program = gl.createProgram();
-                gl.attachShader(this.program, vertexShader);
-                gl.attachShader(this.program, fragmentShader);
-                gl.linkProgram(this.program);
+                // Add time-based animation
+                float wave = sin(time * 2.0 + dist * 20.0) * 0.1;
+                intensity += wave;
                 
-                if (!gl.getProgramParameter(this.program, gl.LINK_STATUS)) {
-                    console.error('Unable to initialize the shader program.');
-                }
-
-                // Create buffers
-                const positionBuffer = gl.createBuffer();
-                gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+                // Soft color gradient
+                vec3 color = mix(
+                    vec3(0.9, 0.95, 1.0),
+                    vec3(0.8, 0.85, 0.9),
+                    intensity * 2.0
+                );
                 
-                const positions = [
-                    -1.0, -1.0,
-                    1.0, -1.0,
-                    -1.0, 1.0,
-                    1.0, 1.0,
-                ];
-                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
-                
-                // Set up attributes
-                const positionAttributeLocation = gl.getAttribLocation(this.program, "a_position");
-                gl.enableVertexAttribArray(positionAttributeLocation);
-                gl.vertexAttribPointer(positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
-                
-                // Get uniform locations
-                this.resolutionLocation = gl.getUniformLocation(this.program, "resolution");
-                this.pointerLocation = gl.getUniformLocation(this.program, "pointer");
-                this.timeLocation = gl.getUniformLocation(this.program, "time");
-                
-                this.startTime = Date.now();
+                gl_FragColor = vec4(color, intensity * 0.3);
             }
+        `;
 
-            compileShader(type, source) {
-                const gl = this.gl;
-                const shader = gl.createShader(type);
-                gl.shaderSource(shader, source);
-                gl.compileShader(shader);
-                
-                if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-                    console.error('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(shader));
-                    gl.deleteShader(shader);
-                    return null;
-                }
-                
-                return shader;
-            }
-
-            resize() {
-                const canvas = this.canvas;
-                const displayWidth = canvas.clientWidth;
-                const displayHeight = canvas.clientHeight;
-                
-                if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
-                    canvas.width = displayWidth;
-                    canvas.height = displayHeight;
-                }
-            }
-
-            render() {
-                const gl = this.gl;
-                this.resize();
-                
-                gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-                gl.clearColor(0, 0, 0, 0);
-                gl.clear(gl.COLOR_BUFFER_BIT);
-                
-                gl.useProgram(this.program);
-                
-                // Set uniforms
-                gl.uniform2f(this.resolutionLocation, gl.canvas.width, gl.canvas.height);
-                gl.uniform2f(this.pointerLocation, this.pointer.x * gl.canvas.width, (1 - this.pointer.y) * gl.canvas.height);
-                gl.uniform1f(this.timeLocation, (Date.now() - this.startTime) * 0.001);
-                
-                // Draw
-                gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-                
-                requestAnimationFrame(() => this.render());
-            }
-
-            updatePointer(x, y) {
-                this.pointer.x = x / window.innerWidth;
-                this.pointer.y = y / window.innerHeight;
-            }
+        // Compile shaders
+        const vertexShader = this.compileShader(gl.VERTEX_SHADER, vertexShaderSource);
+        const fragmentShader = this.compileShader(gl.FRAGMENT_SHADER, fragmentShaderSource);
+        
+        // Create program
+        this.program = gl.createProgram();
+        gl.attachShader(this.program, vertexShader);
+        gl.attachShader(this.program, fragmentShader);
+        gl.linkProgram(this.program);
+        
+        if (!gl.getProgramParameter(this.program, gl.LINK_STATUS)) {
+            console.error('Unable to initialize the shader program.');
         }
 
-        // Function to create background particles
-        function createBackgroundParticles() {
-            const container = document.getElementById('bgParticles');
-            const particleCount = 30;
-            
-            for (let i = 0; i < particleCount; i++) {
-                const particle = document.createElement('div');
-                particle.classList.add('particle');
-                
-                // Random size between 2px and 8px
-                const size = Math.random() * 6 + 2;
-                particle.style.width = `${size}px`;
-                particle.style.height = `${size}px`;
-                
-                // Random position
-                particle.style.left = `${Math.random() * 100}%`;
-                
-                // Random animation duration between 10s and 25s
-                const duration = Math.random() * 15 + 10;
-                particle.style.animationDuration = `${duration}s`;
-                
-                // Random animation delay
-                particle.style.animationDelay = `${Math.random() * 5}s`;
-                
-                container.appendChild(particle);
-            }
-        }
+        // Create buffers
+        const positionBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        
+        const positions = [
+            -1.0, -1.0,
+            1.0, -1.0,
+            -1.0, 1.0,
+            1.0, 1.0,
+        ];
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+        
+        // Set up attributes
+        const positionAttributeLocation = gl.getAttribLocation(this.program, "a_position");
+        gl.enableVertexAttribArray(positionAttributeLocation);
+        gl.vertexAttribPointer(positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
+        
+        // Get uniform locations
+        this.resolutionLocation = gl.getUniformLocation(this.program, "resolution");
+        this.pointerLocation = gl.getUniformLocation(this.program, "pointer");
+        this.timeLocation = gl.getUniformLocation(this.program, "time");
+        
+        this.startTime = Date.now();
+    }
 
-        // Function to create sparkles in welcome section
-        function createWelcomeSparkles() {
-            const container = document.getElementById('welcomeSparkles');
-            const sparkleCount = 15;
-            
-            for (let i = 0; i < sparkleCount; i++) {
-                const sparkle = document.createElement('div');
-                sparkle.classList.add('sparkle');
-                
-                // Random position
-                sparkle.style.left = `${Math.random() * 100}%`;
-                sparkle.style.top = `${Math.random() * 100}%`;
-                
-                // Random animation delay
-                sparkle.style.animationDelay = `${Math.random() * 2}s`;
-                
-                container.appendChild(sparkle);
-            }
+    compileShader(type, source) {
+        const gl = this.gl;
+        const shader = gl.createShader(type);
+        gl.shaderSource(shader, source);
+        gl.compileShader(shader);
+        
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+            console.error('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(shader));
+            gl.deleteShader(shader);
+            return null;
         }
+        
+        return shader;
+    }
 
-        // Neon cursor trail effect
-        function createCursorTrail() {
-            const trails = [];
-            const trailCount = 10;
+    resize() {
+        const canvas = this.canvas;
+        const displayWidth = canvas.clientWidth;
+        const displayHeight = canvas.clientHeight;
+        
+        if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
+            canvas.width = displayWidth;
+            canvas.height = displayHeight;
+        }
+    }
+
+    render() {
+        const gl = this.gl;
+        this.resize();
+        
+        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        
+        gl.useProgram(this.program);
+        
+        // Set uniforms
+        gl.uniform2f(this.resolutionLocation, gl.canvas.width, gl.canvas.height);
+        gl.uniform2f(this.pointerLocation, this.pointer.x * gl.canvas.width, (1 - this.pointer.y) * gl.canvas.height);
+        gl.uniform1f(this.timeLocation, (Date.now() - this.startTime) * 0.001);
+        
+        // Draw
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        
+        requestAnimationFrame(() => this.render());
+    }
+
+    updatePointer(x, y) {
+        this.pointer.x = x / window.innerWidth;
+        this.pointer.y = y / window.innerHeight;
+    }
+}
+
+// Function to create background particles
+function createBackgroundParticles() {
+    const container = document.getElementById('bgParticles');
+    const particleCount = 30;
+    
+    for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.classList.add('particle');
+        
+        // Random size between 2px and 8px
+        const size = Math.random() * 6 + 2;
+        particle.style.width = `${size}px`;
+        particle.style.height = `${size}px`;
+        
+        // Random position
+        particle.style.left = `${Math.random() * 100}%`;
+        
+        // Random animation duration between 10s and 25s
+        const duration = Math.random() * 15 + 10;
+        particle.style.animationDuration = `${duration}s`;
+        
+        // Random animation delay
+        particle.style.animationDelay = `${Math.random() * 5}s`;
+        
+        container.appendChild(particle);
+    }
+}
+
+// Function to create sparkles in welcome section
+function createWelcomeSparkles() {
+    const container = document.getElementById('welcomeSparkles');
+    const sparkleCount = 15;
+    
+    for (let i = 0; i < sparkleCount; i++) {
+        const sparkle = document.createElement('div');
+        sparkle.classList.add('sparkle');
+        
+        // Random position
+        sparkle.style.left = `${Math.random() * 100}%`;
+        sparkle.style.top = `${Math.random() * 100}%`;
+        
+        // Random animation delay
+        sparkle.style.animationDelay = `${Math.random() * 2}s`;
+        
+        container.appendChild(sparkle);
+    }
+}
+
+// Neon cursor trail effect
+function createCursorTrail() {
+    const trails = [];
+    const trailCount = 10;
+    
+    for (let i = 0; i < trailCount; i++) {
+        const trail = document.createElement('div');
+        trail.classList.add('cursor-trail');
+        document.body.appendChild(trail);
+        trails.push({
+            element: trail,
+            x: 0,
+            y: 0,
+            opacity: 0
+        });
+    }
+    
+    let currentTrail = 0;
+    
+    document.addEventListener('mousemove', (e) => {
+        const trail = trails[currentTrail];
+        trail.x = e.clientX;
+        trail.y = e.clientY;
+        trail.opacity = 1;
+        
+        trail.element.style.left = `${trail.x}px`;
+        trail.element.style.top = `${trail.y}px`;
+        trail.element.style.opacity = trail.opacity;
+        
+        // Random neon color for each trail
+        const colors = ['var(--neon-pink)', 'var(--neon-blue)', 'var(--neon-purple)'];
+        const randomColor = colors[Math.floor(Math.random() * colors.length)];
+        trail.element.style.background = randomColor;
+        trail.element.style.boxShadow = `0 0 10px ${randomColor}, 0 0 20px ${randomColor}`;
+        
+        currentTrail = (currentTrail + 1) % trailCount;
+        
+        // Fade out trails
+        setTimeout(() => {
+            trail.opacity = 0;
+            trail.element.style.opacity = trail.opacity;
+        }, 300);
+    });
+}
+
+// SINGLE CORRECTED Function to load and display gallery images with uniform sizing
+function loadGalleryImages() {
+    const gallery = document.getElementById('gallery');
+    const imageFiles = ['1.jpg', '2.jpg', '3.jpg', '4.jpg', '5.jpg'];
+    
+    // Clear any existing content
+    gallery.innerHTML = '';
+    
+    let loadedCount = 0;
+    const totalImages = imageFiles.length;
+    
+    imageFiles.forEach((filename, index) => {
+        const galleryItem = document.createElement('div');
+        galleryItem.classList.add('gallery-item');
+        
+        const img = new Image(); // Use Image constructor for better control
+        img.src = filename;
+        img.alt = `Amrutha and Karthik engagement photo ${index + 1}`;
+        img.classList.add('gallery-image');
+        img.loading = 'lazy';
+        
+        img.onload = function() {
+            loadedCount++;
+            console.log(`Loaded ${loadedCount}/${totalImages}: ${filename} (${img.naturalWidth}x${img.naturalHeight})`);
             
-            for (let i = 0; i < trailCount; i++) {
-                const trail = document.createElement('div');
-                trail.classList.add('cursor-trail');
-                document.body.appendChild(trail);
-                trails.push({
-                    element: trail,
-                    x: 0,
-                    y: 0,
-                    opacity: 0
-                });
-            }
+            // Force uniform styling
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.objectFit = 'cover'; // This ensures uniform cropping
+        };
+        
+        img.onerror = function() {
+            console.error(`Failed to load: ${filename}`);
+            loadedCount++;
             
-            let currentTrail = 0;
+            // Create placeholder
+            galleryItem.innerHTML = `
+                <div class="placeholder-text" style="padding: 2rem; text-align: center; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                    <i class="fas fa-image" style="font-size: 3rem; margin-bottom: 1rem; color: var(--text-secondary);"></i>
+                    <span style="color: var(--text-secondary); font-family: 'Cormorant Garamond', serif;">Memory ${index + 1}</span>
+                </div>
+            `;
+        };
+        
+        galleryItem.addEventListener('click', () => {
+            openImageModal(index);
+        });
+        
+        galleryItem.appendChild(img);
+        gallery.appendChild(galleryItem);
+    });
+}
+
+// Download All Photos Functionality
+function setupDownloadAll() {
+    const downloadAllBtn = document.getElementById('downloadAllBtn');
+    
+    if (downloadAllBtn) {
+        downloadAllBtn.addEventListener('click', function() {
+            const imageFiles = ['1.jpg', '2.jpg', '3.jpg', '4.jpg', '5.jpg'];
             
-            document.addEventListener('mousemove', (e) => {
-                const trail = trails[currentTrail];
-                trail.x = e.clientX;
-                trail.y = e.clientY;
-                trail.opacity = 1;
-                
-                trail.element.style.left = `${trail.x}px`;
-                trail.element.style.top = `${trail.y}px`;
-                trail.element.style.opacity = trail.opacity;
-                
-                // Random neon color for each trail
-                const colors = ['var(--neon-pink)', 'var(--neon-blue)', 'var(--neon-purple)'];
-                const randomColor = colors[Math.floor(Math.random() * colors.length)];
-                trail.element.style.background = randomColor;
-                trail.element.style.boxShadow = `0 0 10px ${randomColor}, 0 0 20px ${randomColor}`;
-                
-                currentTrail = (currentTrail + 1) % trailCount;
-                
-                // Fade out trails
+            // Create and trigger downloads for each image
+            imageFiles.forEach((filename, index) => {
                 setTimeout(() => {
-                    trail.opacity = 0;
-                    trail.element.style.opacity = trail.opacity;
-                }, 300);
+                    downloadImage(filename, `engagement-memory-${index + 1}.jpg`);
+                }, index * 500); // Stagger downloads to avoid blocking
             });
-        }
+            
+            // Show success message
+            alert('Download started! Your photos are being downloaded one by one.');
+        });
+    }
+}
 
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize WebGL Fluid Simulation
-            const canvas = document.getElementById('webgl-canvas');
-            const fluidSimulation = new FluidSimulation(canvas);
-            fluidSimulation.render();
+// Helper function to download individual images
+function downloadImage(imageUrl, filename) {
+    const link = document.createElement('a');
+    link.href = imageUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
 
-            // Create background particles
-            createBackgroundParticles();
-            
-            // Create welcome sparkles
-            createWelcomeSparkles();
-            
-            // Create cursor trail effect
-            createCursorTrail();
+// Modal functionality variables
+let currentImageIndex = 0;
+let galleryImages = [];
 
-            // Custom cursor
-            const cursor = document.querySelector('.cursor');
-            const cursorFollower = document.querySelector('.cursor-follower');
-            
-            document.addEventListener('mousemove', (e) => {
-                cursor.style.left = e.clientX + 'px';
-                cursor.style.top = e.clientY + 'px';
-                
-                setTimeout(() => {
-                    cursorFollower.style.left = e.clientX + 'px';
-                    cursorFollower.style.top = e.clientY + 'px';
-                }, 100);
-                
-                // Update fluid simulation pointer
-                fluidSimulation.updatePointer(e.clientX, e.clientY);
-            });
+// Function to open image in modal
+function openImageModal(index) {
+    // Get all gallery images
+    const galleryItems = document.querySelectorAll('.gallery-image');
+    galleryImages = Array.from(galleryItems).map(img => img.src);
+    
+    currentImageIndex = index;
+    if (modalImage && modal) {
+        modalImage.src = galleryImages[currentImageIndex];
+        modal.style.display = 'flex';
+    }
+}
 
-            // Loading progress bar
-            const progressBar = document.getElementById('progressBar');
-            let progress = 0;
-            const progressInterval = setInterval(() => {
-                progress += Math.random() * 10;
-                if (progress >= 100) {
-                    progress = 100;
-                    clearInterval(progressInterval);
-                    
-                    // Hide loading screen after progress completes
-                    setTimeout(() => {
-                        document.getElementById('loading-screen').style.opacity = '0';
-                        setTimeout(() => {
-                            document.getElementById('loading-screen').style.display = 'none';
-                        }, 1000);
-                    }, 500);
-                }
-                progressBar.style.width = `${progress}%`;
-            }, 200);
+// Function to show previous image in modal
+function showPreviousImage() {
+    if (galleryImages.length === 0) return;
+    currentImageIndex = (currentImageIndex - 1 + galleryImages.length) % galleryImages.length;
+    if (modalImage) {
+        modalImage.src = galleryImages[currentImageIndex];
+    }
+}
 
-            // Initialize timer
-            updateMiniTimer();
-            setInterval(updateMiniTimer, 1000);
+// Function to show next image in modal
+function showNextImage() {
+    if (galleryImages.length === 0) return;
+    currentImageIndex = (currentImageIndex + 1) % galleryImages.length;
+    if (modalImage) {
+        modalImage.src = galleryImages[currentImageIndex];
+    }
+}
+
+// Mini timer function
+function updateMiniTimer() {
+    const now = new Date();
+    let targetDate;
+    
+    // Determine which event to count down to
+    const engagementDate = new Date('October 19, 2025 12:00:00');
+    const marriageDate = new Date('March 12, 2026 12:00:00');
+    
+    if (now < engagementDate) {
+        // Countdown to engagement
+        targetDate = engagementDate;
+    } else if (now < marriageDate) {
+        // Countdown to marriage
+        targetDate = marriageDate;
+    } else {
+        // Both events have passed
+        document.getElementById('miniDays').textContent = '00';
+        document.getElementById('miniHours').textContent = '00';
+        document.getElementById('miniMinutes').textContent = '00';
+        document.getElementById('miniSeconds').textContent = '00';
+        return;
+    }
+    
+    const timeRemaining = targetDate - now;
+    
+    if (timeRemaining <= 0) {
+        // Event has started/ended
+        document.getElementById('miniDays').textContent = '00';
+        document.getElementById('miniHours').textContent = '00';
+        document.getElementById('miniMinutes').textContent = '00';
+        document.getElementById('miniSeconds').textContent = '00';
+        return;
+    }
+    
+    const days = Math.floor(timeRemaining / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((timeRemaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((timeRemaining % (1000 * 60)) / 1000);
+    
+    document.getElementById('miniDays').textContent = days.toString().padStart(2, '0');
+    document.getElementById('miniHours').textContent = hours.toString().padStart(2, '0');
+    document.getElementById('miniMinutes').textContent = minutes.toString().padStart(2, '0');
+    document.getElementById('miniSeconds').textContent = seconds.toString().padStart(2, '0');
+}
+
+// Main initialization function
+function initializeApp() {
+    // Initialize WebGL Fluid Simulation
+    const canvas = document.getElementById('webgl-canvas');
+    if (canvas) {
+        const fluidSimulation = new FluidSimulation(canvas);
+        fluidSimulation.render();
+    }
+
+    // Create background particles
+    createBackgroundParticles();
+    
+    // Create welcome sparkles
+    createWelcomeSparkles();
+    
+    // Create cursor trail effect
+    createCursorTrail();
+
+    // Custom cursor
+    const cursor = document.querySelector('.cursor');
+    const cursorFollower = document.querySelector('.cursor-follower');
+    
+    if (cursor && cursorFollower) {
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
             
-            // Modal functionality
-            const modal = document.getElementById('imageModal');
-            const modalImage = document.getElementById('modalImage');
-            const closeModal = document.getElementById('closeModal');
-            const downloadBtn = document.getElementById('downloadBtn');
-            const prevBtn = document.getElementById('prevBtn');
-            const nextBtn = document.getElementById('nextBtn');
+            setTimeout(() => {
+                cursorFollower.style.left = e.clientX + 'px';
+                cursorFollower.style.top = e.clientY + 'px';
+            }, 100);
             
-            let currentImageIndex = 0;
-            let galleryImages = [];
-            
-            // Close modal when clicking X or outside image
-            closeModal.addEventListener('click', () => {
-                modal.style.display = 'none';
-            });
-            
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    modal.style.display = 'none';
-                }
-            });
-            
-            // Download functionality
-            downloadBtn.addEventListener('click', () => {
-                const imageUrl = modalImage.src;
-                const link = document.createElement('a');
-                link.href = imageUrl;
-                link.download = 'engagement-memory.jpg';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            });
-            
-            // Navigation between images
-            prevBtn.addEventListener('click', showPreviousImage);
-            nextBtn.addEventListener('click', showNextImage);
-            
-            // Keyboard navigation
-            document.addEventListener('keydown', (e) => {
-                if (modal.style.display === 'flex') {
-                    if (e.key === 'ArrowLeft') showPreviousImage();
-                    if (e.key === 'ArrowRight') showNextImage();
-                    if (e.key === 'Escape') modal.style.display = 'none';
-                }
-            });
-            
-            function showPreviousImage() {
-                if (galleryImages.length === 0) return;
-                currentImageIndex = (currentImageIndex - 1 + galleryImages.length) % galleryImages.length;
-                modalImage.src = galleryImages[currentImageIndex];
-            }
-            
-            function showNextImage() {
-                if (galleryImages.length === 0) return;
-                currentImageIndex = (currentImageIndex + 1) % galleryImages.length;
-                modalImage.src = galleryImages[currentImageIndex];
-            }
-            
-            // Function to open image in modal
-            function openImageModal(index) {
-                currentImageIndex = index;
-                modalImage.src = galleryImages[currentImageIndex];
-                modal.style.display = 'flex';
-            }
-            
-            // In a real implementation, this would fetch images from your backend
-            function loadGalleryImages() {
-                // This would be replaced with your backend API call
-                // For demonstration, we're using placeholder images
-                const placeholderImages = [];
-                
-                // For now, we'll just show a message since there's no backend
-                const gallery = document.getElementById('gallery');
-                gallery.innerHTML = '<div class="gallery-item"><div class="placeholder-text">Beautiful moments will be shared here soon</div></div>';
-            }
-            
-            // Initialize gallery
-            loadGalleryImages();
-            
-            // Mini timer function
-            function updateMiniTimer() {
-                const now = new Date();
-                let targetDate;
-                
-                // Determine which event to count down to
-                const engagementDate = new Date('October 19, 2025 12:00:00');
-                const marriageDate = new Date('March 12, 2026 12:00:00');
-                
-                if (now < engagementDate) {
-                    // Countdown to engagement
-                    targetDate = engagementDate;
-                } else if (now < marriageDate) {
-                    // Countdown to marriage
-                    targetDate = marriageDate;
-                } else {
-                    // Both events have passed
-                    document.getElementById('miniDays').textContent = '00';
-                    document.getElementById('miniHours').textContent = '00';
-                    document.getElementById('miniMinutes').textContent = '00';
-                    document.getElementById('miniSeconds').textContent = '00';
-                    return;
-                }
-                
-                const timeRemaining = targetDate - now;
-                
-                if (timeRemaining <= 0) {
-                    // Event has started/ended
-                    document.getElementById('miniDays').textContent = '00';
-                    document.getElementById('miniHours').textContent = '00';
-                    document.getElementById('miniMinutes').textContent = '00';
-                    document.getElementById('miniSeconds').textContent = '00';
-                    return;
-                }
-                
-                const days = Math.floor(timeRemaining / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((timeRemaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((timeRemaining % (1000 * 60)) / 1000);
-                
-                document.getElementById('miniDays').textContent = days.toString().padStart(2, '0');
-                document.getElementById('miniHours').textContent = hours.toString().padStart(2, '0');
-                document.getElementById('miniMinutes').textContent = minutes.toString().padStart(2, '0');
-                document.getElementById('miniSeconds').textContent = seconds.toString().padStart(2, '0');
+            // Update fluid simulation pointer
+            if (window.fluidSimulation) {
+                window.fluidSimulation.updatePointer(e.clientX, e.clientY);
             }
         });
+    }
+
+    // Loading progress bar
+    const progressBar = document.getElementById('progressBar');
+    if (progressBar) {
+        let progress = 0;
+        const progressInterval = setInterval(() => {
+            progress += Math.random() * 10;
+            if (progress >= 100) {
+                progress = 100;
+                clearInterval(progressInterval);
+                
+                // Hide loading screen after progress completes
+                setTimeout(() => {
+                    const loadingScreen = document.getElementById('loading-screen');
+                    if (loadingScreen) {
+                        loadingScreen.style.opacity = '0';
+                        setTimeout(() => {
+                            loadingScreen.style.display = 'none';
+                        }, 1000);
+                    }
+                }, 500);
+            }
+            progressBar.style.width = `${progress}%`;
+        }, 200);
+    }
+
+    // Initialize timer
+    updateMiniTimer();
+    setInterval(updateMiniTimer, 1000);
+    
+    // Load gallery images
+    loadGalleryImages();
+    
+    // Setup download functionality
+    setupDownloadAll();
+    
+    // Modal functionality
+    const modal = document.getElementById('imageModal');
+    const modalImage = document.getElementById('modalImage');
+    const closeModal = document.getElementById('closeModal');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    
+    // Close modal when clicking X or outside image
+    if (closeModal) {
+        closeModal.addEventListener('click', () => {
+            if (modal) modal.style.display = 'none';
+        });
+    }
+    
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+    }
+    
+    // Download functionality for individual image in modal
+    if (downloadBtn) {
+        downloadBtn.addEventListener('click', () => {
+            if (modalImage) {
+                const imageUrl = modalImage.src;
+                const filename = `engagement-memory-${currentImageIndex + 1}.jpg`;
+                downloadImage(imageUrl, filename);
+            }
+        });
+    }
+    
+    // Navigation between images
+    if (prevBtn) prevBtn.addEventListener('click', showPreviousImage);
+    if (nextBtn) nextBtn.addEventListener('click', showNextImage);
+    
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+        if (modal && modal.style.display === 'flex') {
+            if (e.key === 'ArrowLeft') showPreviousImage();
+            if (e.key === 'ArrowRight') showNextImage();
+            if (e.key === 'Escape') modal.style.display = 'none';
+        }
+    });
+}
+
+// Start the application when DOM is loaded
+document.addEventListener('DOMContentLoaded', initializeApp);
     </script>
 </body>
 </html>
